@@ -17,7 +17,7 @@ import { useAppTheme } from '../../src/core/theme/ThemeContext';
 
 type ActiveTab = 'overview' | 'activities' | 'procurement' | 'finance' | 'team' | 'gallery';
 type ProcurementTab = 'requisitions' | 'lpos' | 'store';
-type FinanceTab = 'payments' | 'expenses';
+type FinanceTab = 'payments' | 'expenses' | 'sitefund';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -201,6 +201,16 @@ export default function ProjectDetailScreen() {
       return res.data?.data?.expenses || res.data?.data || [];
     },
     enabled: activeTab === 'finance' && financeTab === 'expenses'
+  });
+
+  const { data: siteFund, isLoading: loadingSiteFund, error: siteFundError, refetch: refetchSiteFund } = useQuery({
+    queryKey: ['project-site-fund', id],
+    queryFn: async () => {
+      const res = await apiClient.get(`/projects/${id}/site-fund/my-balance`);
+      return res.data?.data || null;
+    },
+    enabled: activeTab === 'finance' && financeTab === 'sitefund',
+    retry: false
   });
 
   const { data: expenseCategories } = useQuery({
@@ -1192,6 +1202,9 @@ export default function ProjectDetailScreen() {
               <TouchableOpacity onPress={() => setFinanceTab('expenses')} style={[(isDark ? styles.subTabBtnDark : styles.subTabBtn), financeTab === 'expenses' && styles.subTabBtnActive]}>
                 <Text style={[(isDark ? styles.subTabTextDark : styles.subTabText), financeTab === 'expenses' && { color: activeColor }]}>Expenses</Text>
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => setFinanceTab('sitefund')} style={[(isDark ? styles.subTabBtnDark : styles.subTabBtn), financeTab === 'sitefund' && styles.subTabBtnActive]}>
+                <Text style={[(isDark ? styles.subTabTextDark : styles.subTabText), financeTab === 'sitefund' && { color: activeColor }]}>My Site Fund</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Payments List */}
@@ -1277,6 +1290,84 @@ export default function ProjectDetailScreen() {
                     <Text style={styles.emptyText}>No expenses logged.</Text>
                   </GlassCard>
                 )}
+              </View>
+            )}
+
+            {/* MY SITE FUND — cash received for this project vs. what I've spent */}
+            {financeTab === 'sitefund' && (
+              <View>
+                {loadingSiteFund ? (
+                  <ActivityIndicator size="small" color={activeColor} />
+                ) : siteFundError ? (
+                  <GlassCard style={styles.emptyContainer}>
+                    <MaterialCommunityIcons name="cash-remove" size={40} color="#94a3b8" />
+                    <Text style={styles.emptyText}>You are not assigned as a storekeeper on this project.</Text>
+                  </GlassCard>
+                ) : siteFund ? (
+                  <View>
+                    <View style={styles.fundStatsRow}>
+                      <GlassCard style={styles.fundStatCard}>
+                        <Text style={styles.fundStatLabel}>Received</Text>
+                        <Text style={[styles.fundStatValue, { color: '#16a34a' }]}>
+                          {siteFund.received?.toLocaleString() || 0}
+                        </Text>
+                      </GlassCard>
+                      <GlassCard style={styles.fundStatCard}>
+                        <Text style={styles.fundStatLabel}>Spent</Text>
+                        <Text style={[styles.fundStatValue, { color: '#f97316' }]}>
+                          {siteFund.spent?.toLocaleString() || 0}
+                        </Text>
+                      </GlassCard>
+                      <GlassCard style={styles.fundStatCard}>
+                        <Text style={styles.fundStatLabel}>Balance</Text>
+                        <Text style={[styles.fundStatValue, { color: siteFund.balance < 0 ? '#dc2626' : activeColor }]}>
+                          {siteFund.balance?.toLocaleString() || 0}
+                        </Text>
+                      </GlassCard>
+                    </View>
+
+                    <View style={styles.sectionHeaderRow}>
+                      <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>Money Received</Text>
+                      <TouchableOpacity onPress={() => refetchSiteFund()} style={styles.rowActionBtn}>
+                        <MaterialCommunityIcons name="refresh" size={18} color={activeColor} />
+                      </TouchableOpacity>
+                    </View>
+                    {siteFund.disbursements && siteFund.disbursements.length > 0 ? (
+                      siteFund.disbursements.map((d: any) => (
+                        <GlassCard key={d.id} style={styles.kpiDetailCard}>
+                          <View style={styles.badgeRow}>
+                            <Text style={[styles.activityName, isDark ? styles.darkText : styles.lightText]}>
+                              {d.amount?.toLocaleString() || 0} TZS
+                            </Text>
+                            <Text style={styles.activityMeta}>{d.date}</Text>
+                          </View>
+                          <Text style={styles.activityDesc}>
+                            Method: {(d.method || 'cash').replace('_', ' ')} · By: {d.disbursedBy ? `${d.disbursedBy.firstName} ${d.disbursedBy.lastName}` : '—'}
+                          </Text>
+                        </GlassCard>
+                      ))
+                    ) : (
+                      <GlassCard style={styles.emptyContainer}>
+                        <MaterialCommunityIcons name="clock-outline" size={40} color="#94a3b8" />
+                        <Text style={styles.emptyText}>No funds received yet for this project.</Text>
+                      </GlassCard>
+                    )}
+
+                    {siteFund.expenseBreakdown && siteFund.expenseBreakdown.length > 0 && (
+                      <>
+                        <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText, { marginTop: 16, marginBottom: 8 }]}>
+                          Spending Breakdown
+                        </Text>
+                        {siteFund.expenseBreakdown.map((b: any) => (
+                          <View key={b.category} style={styles.breakdownRow}>
+                            <Text style={[styles.breakdownLabel, isDark ? styles.darkText : styles.lightText]}>{b.category}</Text>
+                            <Text style={styles.breakdownValue}>{b.amount?.toLocaleString()} TZS</Text>
+                          </View>
+                        ))}
+                      </>
+                    )}
+                  </View>
+                ) : null}
               </View>
             )}
           </View>
@@ -2159,6 +2250,43 @@ export default function ProjectDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  fundStatsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16
+  },
+  fundStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14
+  },
+  fundStatLabel: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#64748b',
+    marginBottom: 4,
+    textTransform: 'uppercase'
+  },
+  fundStatValue: {
+    fontSize: 15,
+    fontWeight: '800'
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(148, 163, 184, 0.2)'
+  },
+  breakdownLabel: {
+    fontSize: 13,
+    fontWeight: '600'
+  },
+  breakdownValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#f97316'
+  },
   screen: {
     flex: 1
   },
