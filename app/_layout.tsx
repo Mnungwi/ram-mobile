@@ -11,9 +11,18 @@ import * as SecureStore from 'expo-secure-store';
 import { setCredentials, setCompanyTheme } from '../src/core/store/auth.slice';
 import { fetchCompanyTheme } from '../src/core/theme/companyTheme';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { AppThemeProvider } from '../src/core/theme/ThemeContext';
 
 const queryClient = new QueryClient();
+
+// Keep the native splash visible until the company theme (and auth state) has
+// loaded, so the very first screen the user sees is already correctly
+// branded for this deployment — not a generic flash before switching over.
+// (The native splash IMAGE itself is still a build-time asset per Expo/RN
+// platform constraints — swap assets/logo.png + app.json's "splash" config
+// per client at build time. This only controls how long it stays up for.)
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function NavigationGuard() {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
@@ -45,10 +54,14 @@ function Initializer() {
 
   useEffect(() => {
     // Company branding (color + logo) — public endpoint, doesn't need auth,
-    // so it loads in parallel with the login bootstrap below.
-    fetchCompanyTheme().then((theme) => {
-      if (theme) store.dispatch(setCompanyTheme(theme));
-    });
+    // so it loads in parallel with the login bootstrap below. Race it against
+    // a short timeout so a slow/offline network never leaves the splash stuck.
+    const themeReady = Promise.race([
+      fetchCompanyTheme().then((theme) => {
+        if (theme) store.dispatch(setCompanyTheme(theme));
+      }),
+      new Promise((resolve) => setTimeout(resolve, 2500)),
+    ]);
 
     const bootstrapAsync = async () => {
       try {
@@ -85,7 +98,9 @@ function Initializer() {
       }
     };
 
-    bootstrapAsync();
+    Promise.all([bootstrapAsync(), themeReady]).finally(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    });
   }, []);
 
   return <NavigationGuard />;
