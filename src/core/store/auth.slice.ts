@@ -24,7 +24,10 @@ interface AuthState {
   biometricsEnabled: boolean;
   rememberMe: boolean;
   sessionTimeoutMinutes: number;
-  themeColor: string; // 'blue' | 'green' | 'purple' | 'orange'
+  themeColor: string; // 'company' | 'blue' | 'green' | 'purple' | 'orange'
+  // The live theme pulled from /api/theme (same source the admin panel's
+  // Appearance settings write to) — 'company' resolves to these.
+  companyTheme: { primary: string; logoUrl: string; appName: string } | null;
 }
 
 const initialState: AuthState = {
@@ -36,7 +39,8 @@ const initialState: AuthState = {
   biometricsEnabled: false,
   rememberMe: false,
   sessionTimeoutMinutes: 30,
-  themeColor: 'blue'
+  themeColor: 'company',
+  companyTheme: null,
 };
 
 const authSlice = createSlice({
@@ -81,6 +85,9 @@ const authSlice = createSlice({
     setThemeColor: (state, action: PayloadAction<string>) => {
       state.themeColor = action.payload;
     },
+    setCompanyTheme: (state, action: PayloadAction<{ primary: string; logoUrl: string; appName: string }>) => {
+      state.companyTheme = action.payload;
+    },
     clearMustChangePassword: (state) => {
       if (state.user) {
         state.user.mustChangePassword = false;
@@ -89,5 +96,5 @@ const authSlice = createSlice({
   }
 });
 
-export const { setCredentials, clearCredentials, updateTokens, setBiometricsEnabled, updateProfile, setThemeColor, clearMustChangePassword } = authSlice.actions;
+export const { setCredentials, clearCredentials, updateTokens, setBiometricsEnabled, updateProfile, setThemeColor, setCompanyTheme, clearMustChangePassword } = authSlice.actions;
 export default authSlice.reducer;

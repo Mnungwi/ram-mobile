@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { apiClient, resolveMediaUrl } from '../../src/core/services/api.service';
+import { resolveAccentColor } from '../../src/core/theme/companyTheme';
 import { getLocalProjects, getLocalTechnicians } from '../../src/core/services/database.service';
 import GlassCard from '../../src/components/GlassCard';
 import CustomInput from '../../src/components/CustomInput';
@@ -27,8 +28,8 @@ export default function ProjectDetailScreen() {
   const { isDark } = useAppTheme();
 
   // Redux user & theme selection
-  const { user, themeColor } = useSelector((state: any) => state.auth);
-  const activeColor = themeColor === 'green' ? '#10b981' : themeColor === 'purple' ? '#7c3aed' : themeColor === 'orange' ? '#f59e0b' : '#1a56db';
+  const { user, themeColor, companyTheme } = useSelector((state: any) => state.auth);
+  const activeColor = resolveAccentColor(themeColor, companyTheme);
 
   // State Tabs
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');

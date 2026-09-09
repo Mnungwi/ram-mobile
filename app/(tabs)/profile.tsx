@@ -8,12 +8,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { clearCredentials, setBiometricsEnabled, updateProfile, setThemeColor } from '../../src/core/store/auth.slice';
 import { apiClient, resolveMediaUrl } from '../../src/core/services/api.service';
 import { useAppTheme } from '../../src/core/theme/ThemeContext';
+import { resolveAccentColor } from '../../src/core/theme/companyTheme';
 import GlassCard from '../../src/components/GlassCard';
 import CustomInput from '../../src/components/CustomInput';
 import CustomButton from '../../src/components/CustomButton';
 
 export default function ProfileScreen() {
-  const { user, biometricsEnabled, themeColor } = useSelector((state: any) => state.auth);
+  const { user, biometricsEnabled, themeColor, companyTheme } = useSelector((state: any) => state.auth);
   const dispatch = useDispatch();
   const router = useRouter();
   const { isDark, toggleTheme } = useAppTheme();
@@ -27,8 +28,8 @@ export default function ProfileScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // Local theme colors
-  const activeColor = themeColor === 'green' ? '#10b981' : themeColor === 'purple' ? '#7c3aed' : themeColor === 'orange' ? '#f59e0b' : '#1a56db';
+  // Company color by default; user can still pick a personal preset below.
+  const activeColor = resolveAccentColor(themeColor, companyTheme);
 
   const name = user?.firstName ? `${user.firstName} ${user.lastName}` : (user?.email || 'Unknown User');
   const email = user?.email || '—';
@@ -226,6 +227,10 @@ export default function ProfileScreen() {
       <GlassCard style={styles.settingsCard}>
         <Text style={[styles.themeLabel, isDark ? styles.darkText : styles.lightText]}>Select App Accent Color</Text>
         <View style={styles.themeSelectorRow}>
+          <TouchableOpacity onPress={() => dispatch(setThemeColor('company'))} style={[styles.themeChip, themeColor === 'company' && styles.themeChipActive, { borderColor: companyTheme?.primary || '#1a56db' }]}>
+            <View style={[styles.themeDot, { backgroundColor: companyTheme?.primary || '#1a56db' }]} />
+            <Text style={styles.themeChipText}>Company Default</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => dispatch(setThemeColor('blue'))} style={[styles.themeChip, themeColor === 'blue' && styles.themeChipActive, { borderColor: '#1a56db' }]}>
             <View style={[styles.themeDot, { backgroundColor: '#1a56db' }]} />
             <Text style={styles.themeChipText}>Ocean Blue</Text>

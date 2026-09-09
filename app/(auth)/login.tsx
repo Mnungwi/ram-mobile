@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import GlassCard from '../../src/components/GlassCard';
 import { useAppTheme } from '../../src/core/theme/ThemeContext';
 
 export default function LoginScreen() {
+  const { companyTheme } = useSelector((state: any) => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -214,7 +215,11 @@ export default function LoginScreen() {
       
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.logoText}>UNITED RAM</Text>
+          <Image
+            source={companyTheme?.logoUrl ? { uri: companyTheme.logoUrl } : require('../../assets/logo.png')}
+            style={styles.logoImage}
+          />
+          <Text style={styles.logoText}>RAM PROJECTS</Text>
           <Text style={styles.subtext}>Elite Infrastructure Solutions</Text>
         </View>
 
@@ -268,7 +273,7 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
-                placeholder="name@unitedram.com"
+                placeholder="name@ram.co.tz"
               />
 
               <CustomInput
@@ -307,7 +312,7 @@ export default function LoginScreen() {
                     autoCapitalize="none"
                     value={forgotEmail}
                     onChangeText={setForgotEmail}
-                    placeholder="name@unitedram.com"
+                    placeholder="name@ram.co.tz"
                   />
                   <CustomButton
                     title="SEND RESET LINK"
@@ -386,18 +391,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 36
   },
+  logoImage: {
+    width: 110,
+    height: 110,
+    resizeMode: 'contain',
+    marginBottom: 12,
+  },
   logoText: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: '800',
     color: '#ffffff',
-    letterSpacing: 2
+    letterSpacing: 1,
+    textAlign: 'center'
   },
   subtext: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#94a3b8',
     letterSpacing: 1,
-    marginTop: 4,
-    textTransform: 'uppercase'
+    marginTop: 6,
+    textTransform: 'uppercase',
+    textAlign: 'center'
   },
   card: {
     marginHorizontal: 4

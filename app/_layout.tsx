@@ -8,7 +8,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import store, { RootState } from '../src/core/store/store';
 import * as SecureStore from 'expo-secure-store';
-import { setCredentials } from '../src/core/store/auth.slice';
+import { setCredentials, setCompanyTheme } from '../src/core/store/auth.slice';
+import { fetchCompanyTheme } from '../src/core/theme/companyTheme';
 import { StatusBar } from 'expo-status-bar';
 import { AppThemeProvider } from '../src/core/theme/ThemeContext';
 
@@ -43,6 +44,12 @@ function Initializer() {
   const router = useRouter();
 
   useEffect(() => {
+    // Company branding (color + logo) — public endpoint, doesn't need auth,
+    // so it loads in parallel with the login bootstrap below.
+    fetchCompanyTheme().then((theme) => {
+      if (theme) store.dispatch(setCompanyTheme(theme));
+    });
+
     const bootstrapAsync = async () => {
       try {
         // Attempt to auto-login from stored tokens
