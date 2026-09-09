@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, 
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../src/core/store/store';
 import { apiClient } from '../../src/core/services/api.service';
 import { getLocalLetters, saveLettersToLocal, queueSyncAction } from '../../src/core/services/database.service';
 import GlassCard from '../../src/components/GlassCard';
@@ -13,6 +15,10 @@ import { useAppTheme } from '../../src/core/theme/ThemeContext';
 
 export default function LettersScreen() {
   const router = useRouter();
+  const { permissions } = useSelector((state: RootState) => state.auth);
+  // Same "not loaded yet -> show it" fallback used for tab visibility in
+  // app/(tabs)/_layout.tsx, so a fresh app open doesn't flash then hide it.
+  const hasPermission = (p: string) => permissions.length === 0 || permissions.includes(p);
   const [searchTerm, setSearchTerm] = useState('');
   const [isOffline, setIsOffline] = useState(false);
   const [showComposeModal, setShowComposeModal] = useState(false);
@@ -272,13 +278,15 @@ export default function LettersScreen() {
         />
       )}
 
-      {/* Floating compose button */}
-      <TouchableOpacity
-        onPress={() => setShowComposeModal(true)}
-        style={styles.fab}
-      >
-        <MaterialCommunityIcons name="pencil-plus" size={24} color="#fff" />
-      </TouchableOpacity>
+      {/* Floating compose button — only for users who can actually create letters */}
+      {hasPermission('letter:create') && (
+        <TouchableOpacity
+          onPress={() => setShowComposeModal(true)}
+          style={styles.fab}
+        >
+          <MaterialCommunityIcons name="pencil-plus" size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
 
       {/* Compose Letter Form Modal */}
       {showComposeModal && (

@@ -28,8 +28,12 @@ export default function ProjectDetailScreen() {
   const { isDark } = useAppTheme();
 
   // Redux user & theme selection
-  const { user, themeColor, companyTheme } = useSelector((state: any) => state.auth);
+  const { user, themeColor, companyTheme, permissions } = useSelector((state: any) => state.auth);
   const activeColor = resolveAccentColor(themeColor, companyTheme);
+  // Same "not loaded yet -> show it" fallback used for tab visibility in
+  // app/(tabs)/_layout.tsx, and the same permission mapping as the admin's
+  // project-detail tabs (admin/.../project-detail.component.html).
+  const hasPermission = (p: string) => !permissions || permissions.length === 0 || permissions.includes(p);
 
   // State Tabs
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
@@ -960,18 +964,26 @@ export default function ProjectDetailScreen() {
           <TouchableOpacity onPress={() => setActiveTab('overview')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'overview' && { backgroundColor: activeColor }]}>
             <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'overview' && styles.tabButtonTextActive]}>Overview</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveTab('activities')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'activities' && { backgroundColor: activeColor }]}>
-            <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'activities' && styles.tabButtonTextActive]}>Activities</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveTab('procurement')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'procurement' && { backgroundColor: activeColor }]}>
-            <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'procurement' && styles.tabButtonTextActive]}>Procurement</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveTab('finance')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'finance' && { backgroundColor: activeColor }]}>
-            <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'finance' && styles.tabButtonTextActive]}>Finance</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setActiveTab('team')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'team' && { backgroundColor: activeColor }]}>
-            <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'team' && styles.tabButtonTextActive]}>Team Directory</Text>
-          </TouchableOpacity>
+          {hasPermission('activity:view') && (
+            <TouchableOpacity onPress={() => setActiveTab('activities')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'activities' && { backgroundColor: activeColor }]}>
+              <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'activities' && styles.tabButtonTextActive]}>Activities</Text>
+            </TouchableOpacity>
+          )}
+          {hasPermission('procurement:view') && (
+            <TouchableOpacity onPress={() => setActiveTab('procurement')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'procurement' && { backgroundColor: activeColor }]}>
+              <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'procurement' && styles.tabButtonTextActive]}>Procurement</Text>
+            </TouchableOpacity>
+          )}
+          {hasPermission('finance:view') && (
+            <TouchableOpacity onPress={() => setActiveTab('finance')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'finance' && { backgroundColor: activeColor }]}>
+              <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'finance' && styles.tabButtonTextActive]}>Finance</Text>
+            </TouchableOpacity>
+          )}
+          {hasPermission('team:view') && (
+            <TouchableOpacity onPress={() => setActiveTab('team')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'team' && { backgroundColor: activeColor }]}>
+              <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'team' && styles.tabButtonTextActive]}>Team Directory</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={() => setActiveTab('gallery')} style={[(isDark ? styles.tabButtonDark : styles.tabButton), activeTab === 'gallery' && { backgroundColor: activeColor }]}>
             <Text style={[(isDark ? styles.tabButtonTextDark : styles.tabButtonText), activeTab === 'gallery' && styles.tabButtonTextActive]}>Gallery</Text>
           </TouchableOpacity>
@@ -1090,10 +1102,12 @@ export default function ProjectDetailScreen() {
               <View>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>Requisition Notes</Text>
-                  <TouchableOpacity onPress={() => setShowReqModal(true)} style={[styles.addReqBtn, { backgroundColor: activeColor }]}>
-                    <MaterialCommunityIcons name="plus" size={16} color="#fff" />
-                    <Text style={styles.addReqBtnText}>NEW NOTE</Text>
-                  </TouchableOpacity>
+                  {hasPermission('requisition:create') && (
+                    <TouchableOpacity onPress={() => setShowReqModal(true)} style={[styles.addReqBtn, { backgroundColor: activeColor }]}>
+                      <MaterialCommunityIcons name="plus" size={16} color="#fff" />
+                      <Text style={styles.addReqBtnText}>NEW NOTE</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {loadingReqs ? (
@@ -1127,10 +1141,12 @@ export default function ProjectDetailScreen() {
               <View>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>Purchase Orders (LPOs)</Text>
-                  <TouchableOpacity onPress={() => setShowLpoModal(true)} style={[styles.addReqBtn, { backgroundColor: activeColor }]}>
-                    <MaterialCommunityIcons name="plus" size={16} color="#fff" />
-                    <Text style={styles.addReqBtnText}>NEW LPO</Text>
-                  </TouchableOpacity>
+                  {hasPermission('lpo:create') && (
+                    <TouchableOpacity onPress={() => setShowLpoModal(true)} style={[styles.addReqBtn, { backgroundColor: activeColor }]}>
+                      <MaterialCommunityIcons name="plus" size={16} color="#fff" />
+                      <Text style={styles.addReqBtnText}>NEW LPO</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {loadingLpos ? (
@@ -1162,7 +1178,7 @@ export default function ProjectDetailScreen() {
               <View>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>Project Local Inventory</Text>
-                  {storeItems && storeItems.length > 0 && (
+                  {storeItems && storeItems.length > 0 && hasPermission('store:issue') && (
                     <TouchableOpacity onPress={handleOpenIssueToTechnicianModal} style={[styles.addReqBtn, { backgroundColor: activeColor }]}>
                       <MaterialCommunityIcons name="account-arrow-right" size={16} color="#fff" />
                       <Text style={styles.addReqBtnText}>ISSUE TO TECH</Text>
@@ -1213,10 +1229,12 @@ export default function ProjectDetailScreen() {
               <View>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>Recorded Payments</Text>
-                  <TouchableOpacity onPress={() => setShowPaymentModal(true)} style={[styles.addReqBtn, { backgroundColor: activeColor }]}>
-                    <MaterialCommunityIcons name="plus" size={16} color="#fff" />
-                    <Text style={styles.addReqBtnText}>NEW PAYMENT</Text>
-                  </TouchableOpacity>
+                  {hasPermission('payment:create') && (
+                    <TouchableOpacity onPress={() => setShowPaymentModal(true)} style={[styles.addReqBtn, { backgroundColor: activeColor }]}>
+                      <MaterialCommunityIcons name="plus" size={16} color="#fff" />
+                      <Text style={styles.addReqBtnText}>NEW PAYMENT</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {loadingPayments ? (
@@ -1235,14 +1253,16 @@ export default function ProjectDetailScreen() {
                           <View style={[styles.statusBadge, styles.activeBg]}>
                             <Text style={styles.statusText}>{p.status || 'Paid'}</Text>
                           </View>
-                          {p.status !== 'Paid' && (
+                          {p.status !== 'Paid' && hasPermission('payment:approve') && (
                             <TouchableOpacity onPress={() => handleApprovePayment(p.id)} style={styles.rowActionBtn}>
                               <MaterialCommunityIcons name="check-circle" size={18} color="#10b981" />
                             </TouchableOpacity>
                           )}
-                          <TouchableOpacity onPress={() => handleDeletePayment(p.id)} style={styles.rowActionBtn}>
-                            <MaterialCommunityIcons name="delete" size={18} color="#ef4444" />
-                          </TouchableOpacity>
+                          {hasPermission('finance:delete') && (
+                            <TouchableOpacity onPress={() => handleDeletePayment(p.id)} style={styles.rowActionBtn}>
+                              <MaterialCommunityIcons name="delete" size={18} color="#ef4444" />
+                            </TouchableOpacity>
+                          )}
                         </View>
                       </View>
                     </GlassCard>
@@ -1261,10 +1281,12 @@ export default function ProjectDetailScreen() {
               <View>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>Project Expenses</Text>
-                  <TouchableOpacity onPress={() => setShowExpenseModal(true)} style={[styles.addReqBtn, { backgroundColor: activeColor }]}>
-                    <MaterialCommunityIcons name="plus" size={16} color="#fff" />
-                    <Text style={styles.addReqBtnText}>NEW EXPENSE</Text>
-                  </TouchableOpacity>
+                  {hasPermission('expense:create') && (
+                    <TouchableOpacity onPress={() => setShowExpenseModal(true)} style={[styles.addReqBtn, { backgroundColor: activeColor }]}>
+                      <MaterialCommunityIcons name="plus" size={16} color="#fff" />
+                      <Text style={styles.addReqBtnText}>NEW EXPENSE</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {loadingExpenses ? (
@@ -1279,9 +1301,11 @@ export default function ProjectDetailScreen() {
                       <Text style={styles.activityDesc}>Category: {exp.category?.name || 'General Expense'}</Text>
                       <View style={[styles.badgeRow, { marginTop: 6 }]}>
                         <Text style={styles.activityMeta}>Date: {exp.date}</Text>
-                        <TouchableOpacity onPress={() => handleDeleteExpense(exp.id)} style={styles.rowActionBtn}>
-                          <MaterialCommunityIcons name="delete" size={18} color="#ef4444" />
-                        </TouchableOpacity>
+                        {hasPermission('finance:delete') && (
+                          <TouchableOpacity onPress={() => handleDeleteExpense(exp.id)} style={styles.rowActionBtn}>
+                            <MaterialCommunityIcons name="delete" size={18} color="#ef4444" />
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </GlassCard>
                   ))
@@ -1625,7 +1649,7 @@ export default function ProjectDetailScreen() {
                       <Text style={styles.wfChipText}>Cancel</Text>
                     </TouchableOpacity>
                   )}
-                  {canDeleteReq(selectedReq) && (
+                  {canDeleteReq(selectedReq) && hasPermission('requisition:delete') && (
                     <TouchableOpacity onPress={() => handleDeleteRequisition(selectedReq.id)} style={[styles.wfChip, { backgroundColor: '#b91c1c' }]}>
                       <Text style={styles.wfChipText}>Delete Draft</Text>
                     </TouchableOpacity>
@@ -1779,7 +1803,7 @@ export default function ProjectDetailScreen() {
                       <Text style={styles.wfChipText}>Cancel LPO</Text>
                     </TouchableOpacity>
                   )}
-                  {canDeleteLpo(selectedLpo) && (
+                  {canDeleteLpo(selectedLpo) && hasPermission('lpo:update') && (
                     <TouchableOpacity onPress={() => handleDeleteLpo(selectedLpo.id)} style={[styles.wfChip, { backgroundColor: '#b91c1c' }]}>
                       <Text style={styles.wfChipText}>Delete Draft</Text>
                     </TouchableOpacity>

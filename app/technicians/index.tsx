@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, 
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../src/core/store/store';
 import { apiClient } from '../../src/core/services/api.service';
 import { getLocalTechnicians, saveTechniciansToLocal, queueSyncAction } from '../../src/core/services/database.service';
 import GlassCard from '../../src/components/GlassCard';
@@ -14,6 +16,8 @@ import { useAppTheme } from '../../src/core/theme/ThemeContext';
 export default function TechniciansScreen() {
   const router = useRouter();
   const { isDark } = useAppTheme();
+  const { permissions } = useSelector((state: RootState) => state.auth);
+  const hasPermission = (p: string) => permissions.length === 0 || permissions.includes(p);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCatId, setSelectedCatId] = useState('');
@@ -199,10 +203,12 @@ export default function TechniciansScreen() {
         />
       )}
 
-      {/* Floating Add Button */}
-      <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.fab}>
-        <MaterialCommunityIcons name="account-plus" size={24} color="#ffffff" />
-      </TouchableOpacity>
+      {/* Floating Add Button — only for users who can actually create technicians */}
+      {hasPermission('technician:create') && (
+        <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.fab}>
+          <MaterialCommunityIcons name="account-plus" size={24} color="#ffffff" />
+        </TouchableOpacity>
+      )}
 
       {/* Add Modal */}
       <Modal visible={showAddModal} animationType="slide" transparent>

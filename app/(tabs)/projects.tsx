@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, 
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../src/core/store/store';
 import { apiClient } from '../../src/core/services/api.service';
 import { getLocalProjects, saveProjectsToLocal, queueSyncAction } from '../../src/core/services/database.service';
 import GlassCard from '../../src/components/GlassCard';
@@ -12,6 +14,10 @@ import { useAppTheme } from '../../src/core/theme/ThemeContext';
 
 export default function ProjectsScreen() {
   const router = useRouter();
+  const { permissions } = useSelector((state: RootState) => state.auth);
+  // Same "not loaded yet -> show it" fallback used for tab visibility in
+  // app/(tabs)/_layout.tsx, so a fresh app open doesn't flash then hide it.
+  const hasPermission = (p: string) => permissions.length === 0 || permissions.includes(p);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isOffline, setIsOffline] = useState(false);
@@ -178,13 +184,15 @@ export default function ProjectsScreen() {
         />
       )}
 
-      {/* Floating Add Project Button */}
-      <TouchableOpacity
-        onPress={() => setShowAddModal(true)}
-        style={styles.fab}
-      >
-        <MaterialCommunityIcons name="plus" size={24} color="#fff" />
-      </TouchableOpacity>
+      {/* Floating Add Project Button — only for users who can actually create projects */}
+      {hasPermission('project:create') && (
+        <TouchableOpacity
+          onPress={() => setShowAddModal(true)}
+          style={styles.fab}
+        >
+          <MaterialCommunityIcons name="plus" size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
 
       {/* Quick Add Form Overlay modal */}
       {showAddModal && (
