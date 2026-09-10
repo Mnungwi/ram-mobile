@@ -30,6 +30,7 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
+  const [otpInfo, setOtpInfo] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const router = useRouter();
@@ -115,7 +116,12 @@ export default function LoginScreen() {
       if (data?.requiresOtp) {
         setLoading(false);
         setOtpStep(true);
-        setOtpError(data.emailSent ? '' : 'The verification email could not be sent — contact an administrator.');
+        setOtpError(
+          !data.emailSent && !data.smsSent
+            ? 'The verification code could not be sent by email or SMS — contact an administrator.'
+            : ''
+        );
+        setOtpInfo(response.data?.message || 'A verification code has been sent to you.');
         setResendCooldown(60);
         return;
       }
@@ -147,7 +153,8 @@ export default function LoginScreen() {
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
     try {
-      await apiClient.post('/auth/resend-otp', { email });
+      const r = await apiClient.post('/auth/resend-otp', { email });
+      setOtpInfo(r.data?.message || 'A new verification code has been sent.');
       setResendCooldown(60);
     } catch {
       // silent — user can retry
@@ -229,8 +236,9 @@ export default function LoginScreen() {
               <Text style={[styles.loginHeader, isDark ? styles.darkText : styles.lightText]}>
                 Verify It's You
               </Text>
-              <Text style={styles.subLabel}>Enter the 6-digit code sent to {email}</Text>
+              <Text style={styles.subLabel}>Enter the 6-digit verification code for {email}</Text>
 
+              {!!otpInfo && !otpError && <Text style={styles.subLabel}>{otpInfo}</Text>}
               {!!otpError && <Text style={styles.errorText}>{otpError}</Text>}
 
               <CustomInput
